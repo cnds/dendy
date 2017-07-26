@@ -1,5 +1,6 @@
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']
 
+
 class Request(object):
 
     def __init__(self, environ):
@@ -40,12 +41,21 @@ class Application(object):
         headers = response.headers
         start_response(response.status, headers)
 
-        responder, route, method = self._get_responder(request)
+        responder, params, method, uri_template = self._get_responder(request)
         responder(**params)
-        # TODO
-        # add return params in _get_responder function
 
     def add_route(self, route, handler):
+        """
+        routes:
+            {
+                'GET': {
+                    '/users/{user_id}': User
+                },
+                'POST': {
+                    '/users': Users
+                }
+            }
+        """
         if not isinstance(handler, type):
             raise TypeError('handler is not type string')
 
@@ -71,13 +81,27 @@ class Application(object):
         method = request.method
         route = request.path
         try:
-            route_map = request.routes[method]
+            route_map = self.routes[method]
         except:
             raise AttributeError('%s method is not allowed' % method)
+
+        uri_template = route_map.keys()[0]
+        uri_splited = uri_template.split('/')  # '/users/{user_id}
+        route_splited = route.split('/')       # '/users/abcd'
+        params = dict()
+        if len(uri_template) != len(route_splited):
+            raise AttributeError('%s incorrect route')
+
+        for index, item in enumerate(uri_splited):
+            if item == route_splited[index]:
+                continue
+            else:
+                if item.startswith('{') and item.endswith('}'):
+                    params[item.rstrip('}').lstrip('{')] = route_splited['index']
 
         try:
             responder = route_map[route]
         except:
             raise AttributeError('%s method is not allowed' % method)
 
-        return responder, route, method
+        return responder, params, method, uri_template
