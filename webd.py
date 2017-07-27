@@ -15,6 +15,23 @@ class Request(object):
     def query_string(self):
         return self._environ.get('QUERY_STRING', '')
 
+    @property
+    def params(self):
+        params = dict()
+        for field in self.query_string.split('&'):
+            k, _, v = field.partition('=')
+
+        if k in params:
+            old_value = params[k]
+            if isinstance(old_value, list):
+                params[k] = old_value.append(v)
+            else:
+                params[k] = [old_value, v]
+        else:
+            params[k] = v
+
+        return params
+
 
 class Response(object):
 
@@ -70,12 +87,14 @@ class Application(object):
             try:
                 responder = getattr(handler, method.lower())
             except:
-                raise AttributeError('%s method is not allowed' % method)
+                pass
             else:
                 if callable(responder):
-                    routes[method] = dict(route=responder)
+                    routes.update({route: responder})
 
         self.routes = routes
+        print route
+        print routes
 
     def _get_responder(self, request):
         method = request.method
