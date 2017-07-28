@@ -32,6 +32,18 @@ class Request(object):
 
         return params
 
+    @property
+    def content_length(self):
+        return self._environ.get('Content-length', 0)
+
+    @property
+    def body(self):
+        input_data = self._environ.get('wsgi.input')
+        if input_data:
+            return input_data.read()
+        else:
+            return dict()
+
 
 class Response(object):
 
@@ -93,8 +105,6 @@ class Application(object):
                     routes.update({route: responder})
 
         self.routes = routes
-        print route
-        print routes
 
     def _get_responder(self, request):
         method = request.method
