@@ -50,6 +50,7 @@ class Response(object):
     def __init__(self):
         self.status = 200
         self.content_type = 'application/json; charset=utf-8'
+        self.headers = dict()
         self.headers['content-type'] = self.content_type
 
     def set_headers(self, headers):
@@ -68,10 +69,11 @@ class Application(object):
         request = self._request(environ)
         response = self._response()
         headers = response.headers
-        start_response(response.status, headers)
 
         responder, params, method, uri_template = self._get_responder(request)
         responder(**params)
+
+        start_response(response.status, headers)
 
     def add_route(self, route, handler):
         """
@@ -115,18 +117,18 @@ class Application(object):
             raise AttributeError('%s method is not allowed' % method)
 
         uri_template = route_map.keys()[0]
-        uri_splited = uri_template.split('/')  # '/users/{user_id}
-        route_splited = route.split('/')       # '/users/abcd'
+        uri_part = uri_template.split('/')  # '/users/{user_id}
+        route_part = route.split('/')       # '/users/abcd'
         params = dict()
-        if len(uri_template) != len(route_splited):
+        if len(uri_template) != len(route_part):
             raise AttributeError('%s incorrect route')
 
-        for index, item in enumerate(uri_splited):
-            if item == route_splited[index]:
+        for index, item in enumerate(uri_part):
+            if item == route_part[index]:
                 continue
             else:
                 if item.startswith('{') and item.endswith('}'):
-                    params[item.rstrip('}').lstrip('{')] = route_splited['index']
+                    params[item.rstrip('}').lstrip('{')] = route_part['index']
 
         try:
             responder = route_map[route]
