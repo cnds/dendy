@@ -77,16 +77,12 @@ class Application(object):
 
     def add_route(self, route, handler):
         """
-        routes:
-            {
-                'GET': {
-                    '/users/{user_id}': User
-                },
-                'POST': {
-                    '/users': Users
-                }
-            }
+        routes: {
+            '/users': [(GET, <bound method>), (POST, <bound method>)],
+            '/users/{user_id}', [(PUT, <bound method>)]
+        }
         """
+
         if not isinstance(handler, type):
             raise TypeError('handler is not type string')
 
@@ -97,6 +93,7 @@ class Application(object):
             raise ValueError('route can not contain "//"')
 
         routes = dict()
+        method_and_responder = list()
         for method in HTTP_METHODS:
             try:
                 responder = getattr(handler, method.lower())
@@ -104,11 +101,13 @@ class Application(object):
                 pass
             else:
                 if callable(responder):
-                    routes.update({route: responder})
+                    method_and_responder.append((method, responder))
+                    routes.update({route: method_and_responder})
 
         self.routes = routes
 
     def _get_responder(self, request):
+        # pending change ref add_route function
         method = request.method
         route = request.path
         try:
@@ -120,7 +119,7 @@ class Application(object):
         uri_part = uri_template.split('/')  # '/users/{user_id}
         route_part = route.split('/')       # '/users/abcd'
         params = dict()
-        if len(uri_template) != len(route_part):
+        if len(uri_part) != len(route_part):
             raise AttributeError('%s incorrect route')
 
         for index, item in enumerate(uri_part):
