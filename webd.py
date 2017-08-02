@@ -2,7 +2,6 @@ HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']
 
 
 class Request(object):
-
     def __init__(self, environ):
         self._environ = environ
         self.path = self._environ.get('PATH_INFO', '/').strip()
@@ -46,7 +45,6 @@ class Request(object):
 
 
 class Response(object):
-
     def __init__(self):
         self.status = 200
         self.content_type = 'application/json; charset=utf-8'
@@ -60,10 +58,10 @@ class Response(object):
 
 
 class Application(object):
-
     def __init__(self, request=Request, response=Response):
         self._request = request
         self._response = response
+        self.routes = dict()
 
     def __call__(self, environ, start_response):
         request = self._request(environ)
@@ -92,8 +90,7 @@ class Application(object):
         if '//' in route:
             raise ValueError('route can not contain "//"')
 
-        routes = dict()
-        method_and_responder = list()
+        responders = list()
         for method in HTTP_METHODS:
             try:
                 responder = getattr(handler, method.lower())
@@ -101,37 +98,48 @@ class Application(object):
                 pass
             else:
                 if callable(responder):
-                    method_and_responder.append((method, responder))
-                    routes.update({route: method_and_responder})
-
-        self.routes = routes
+                    responders.append((method, responder))
+                    self.routes.update({route: responders})
 
     def _get_responder(self, request):
-        # pending change ref add_route function
         method = request.method
         route = request.path
-        try:
-            route_map = self.routes[method]
-        except:
-            raise AttributeError('%s method is not allowed' % method)
 
-        uri_template = route_map.keys()[0]
-        uri_part = uri_template.split('/')  # '/users/{user_id}
-        route_part = route.split('/')       # '/users/abcd'
+        uri_templates = self.routes.keys()
+        uri_part = [
+            uri.lstrip('/').rstrip('/').split('/') for uri in uri_templates
+        ]
+        route_part = route.lstrip('/').rstrip('/').split('/')
         params = dict()
-        if len(uri_part) != len(route_part):
-            raise AttributeError('%s incorrect route')
-
-        for index, item in enumerate(uri_part):
-            if item == route_part[index]:
+        for uri in uri_templates:
+            uri_part = uri.lstrip('/').split('/')
+            if len(uri_part) != len(route_part):
                 continue
-            else:
-                if item.startswith('{') and item.endswith('}'):
-                    params[item.rstrip('}').lstrip('{')] = route_part['index']
 
-        try:
-            responder = route_map[route]
-        except:
+            if uri_part == route_part:
+                responder = self.generate_responder(uri, method)
+                break
+
+            for index, item in enumerate(uri_part):
+                if item == route_part[index]:
+                    continue
+                else:
+                    if item.startswith('{') and item.endswith('}'):
+                        params[item.rstrip('}').lstrip('{')] = route_part[
+                            index]
+                    else:
+                        break
+                responder = self.generate_responder(uri, method)
+
+        return (responder, params, method, uri)
+
+    def generate_responder(self, uri, method):
+        responders = self.routes[uri]
+        responder = None
+        for method_allowed, responder_allowed in responders:
+            if method_allowed == method:
+                responder = responder_allowed
+        if not responder:
             raise AttributeError('%s method is not allowed' % method)
 
-        return responder, params, method, uri_template
+        return responder
