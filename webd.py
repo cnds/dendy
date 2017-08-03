@@ -46,15 +46,16 @@ class Request(object):
 
 class Response(object):
     def __init__(self):
-        self.status = 200
+        self.status = '200 OK'
         self.content_type = 'application/json; charset=utf-8'
-        self.headers = dict()
-        self.headers['content-type'] = self.content_type
+        self.headers = list()
+        self.headers.append(('content-type', self.content_type))
+        self.body = None
 
     def set_headers(self, headers):
         if isinstance(headers, dict):
             for key, value in headers.items():
-                self.headers[str(key).lower()] = value
+                self.headers.append((str(key).lower(), value))
 
 
 class Application(object):
@@ -71,18 +72,25 @@ class Application(object):
         responder, params, method, uri_template = self._get_responder(request)
         responder(**params)
 
-        start_response(response.status, headers)
+        body, length = self._get_body(response)
+        if length is not None:
+            response.headers.append(('content-length', str(length)))
 
-    def add_route(self, route, handler):
+        start_response(response.status, headers)
+        return body
+
+    def add_route(self, route, resource):
         """
         routes: {
             '/users': [(GET, <bound method>), (POST, <bound method>)],
             '/users/{user_id}', [(PUT, <bound method>)]
         }
+
+        resource: the instance of class that containing responder
         """
 
-        if not isinstance(handler, type):
-            raise TypeError('handler is not type string')
+        if not isinstance(route, str):
+            raise TypeError('route is not type string')
 
         if not route.startswith('/'):
             raise ValueError('route must start with "/"')
@@ -93,7 +101,7 @@ class Application(object):
         responders = list()
         for method in HTTP_METHODS:
             try:
-                responder = getattr(handler, method.lower())
+                responder = getattr(resource, method.lower())
             except:
                 pass
             else:
@@ -143,3 +151,12 @@ class Application(object):
             raise AttributeError('%s method is not allowed' % method)
 
         return responder
+
+    def _get_body(self, response):
+        body = response.body
+        if body is not None:
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
+            return [body], len(body)
+
+        return [], 0
