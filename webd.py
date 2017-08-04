@@ -4,9 +4,10 @@ HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']
 
 
 class Request(object):
-    def __init__(self, environ):
+    def init(self, environ):
         self._environ = environ
         self.path = self._environ.get('PATH_INFO', '/').strip()
+        self._body = None
 
     @property
     def method(self):
@@ -14,40 +15,44 @@ class Request(object):
 
     @property
     def query_string(self):
-        return self._environ.get('QUERY_STRING', '')
+        return self._environ.get('QUERY_STRING', None)
 
     @property
     def params(self):
+        """ type: dict """
         params = dict()
-        for field in self.query_string.split('&'):
-            k, _, v = field.partition('=')
+        if self.query_string:
+            for field in self.query_string.split('&'):
+                k, _, v = field.partition('=')
 
-        if k in params:
-            old_value = params[k]
-            if isinstance(old_value, list):
-                params[k] = old_value.append(v)
+            if k in params:
+                old_value = params[k]
+                if isinstance(old_value, list):
+                    params[k] = old_value.append(v)
+                else:
+                    params[k] = [old_value, v]
             else:
-                params[k] = [old_value, v]
-        else:
-            params[k] = v
+                params[k] = v
 
         return params
 
     @property
     def content_length(self):
-        return self._environ.get('Content-length', 0)
+        return self._environ.get('CONTENT_LENGTH', 0)
 
     @property
     def body(self):
+        """ type: dict """
         input_data = self._environ.get('wsgi.input')
         if input_data:
-            return input_data.read()
+            self._body = json.loads(input_data.read().decode('utf-8'))
+            return self._body
         else:
             return dict()
 
 
 class Response(object):
-    def __init__(self):
+    def init(self):
         self.status = '200 OK'
         self.content_type = 'application/json; charset=utf-8'
         self.headers = list()
@@ -62,13 +67,11 @@ class Response(object):
 
 class Application(object):
     def __init__(self, request=Request, response=Response):
-        self._request = request
-        self._response = response
         self.routes = dict()
 
     def __call__(self, environ, start_response):
-        request = self._request(environ)
-        response = self._response()
+        request.init(environ)
+        response.init()
         headers = response.headers
 
         responder, params, method, uri_template = self._get_responder(request)
@@ -163,3 +166,7 @@ class Application(object):
             return [body], len(body)
 
         return [], 0
+
+
+request = Request()
+response = Response()
