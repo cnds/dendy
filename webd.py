@@ -1,3 +1,5 @@
+import json
+
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']
 
 
@@ -70,7 +72,8 @@ class Application(object):
         headers = response.headers
 
         responder, params, method, uri_template = self._get_responder(request)
-        responder(**params)
+        output = responder(**params)
+        response.body = json.dumps(output)
 
         body, length = self._get_body(response)
         if length is not None:
