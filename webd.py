@@ -87,12 +87,15 @@ class Request(object):
     @property
     def body(self):
         """ type: dict """
-        input_data = self._environ.get('wsgi.input')
-        if input_data:
-            self._body = json.loads(input_data.read().decode('utf-8'))
-            return self._body
+        body_stream = self._environ.get('wsgi.input').read()
+        if body_stream:
+            try:
+                self._body = json.loads(body_stream.decode('utf-8'))
+            except json.JSONDecodeError as ex:
+                raise Exception(ex)
         else:
-            return dict()
+            self._body = dict()
+        return self._body
 
 
 class Response(object):
@@ -160,7 +163,7 @@ class Application(object):
         for method in HTTP_METHODS:
             try:
                 responder = getattr(resource, method.lower())
-            except:
+            except AttributeError:
                 pass
             else:
                 if callable(responder):
@@ -205,7 +208,6 @@ class Application(object):
         for method_allowed, responder_allowed in responders:
             if method_allowed == method:
                 responder = responder_allowed
-
         return responder
 
     def _get_body(self, response):
@@ -215,7 +217,7 @@ class Application(object):
                 body = body.encode('utf-8')
             return [body], len(body)
 
-        return [], 0
+        return list(), 0
 
 
 class HTTPStatus(Exception):
