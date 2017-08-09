@@ -112,7 +112,8 @@ class Response(object):
                 self.headers.append((str(key).lower(), value))
 
     def set_status(self, status_code, reason=None):
-        self.status = ' '.join((str(status_code), HTTP_CODES.get(status_code, 'Unknown')))
+        self.status = ' '.join((str(status_code), HTTP_CODES.get(
+            status_code, 'Unknown')))
         self.body = reason
         return self.body
 
@@ -221,7 +222,6 @@ class Application(object):
 
 
 class HTTPStatus(Exception):
-
     def __init__(self, status, body=None, headers=None):
         self.status = status
         self.body = body
