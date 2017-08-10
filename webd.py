@@ -46,20 +46,35 @@ HTTP_CODES = {
     505: 'HTTP VERSION NOT SUPPORTED',
 }
 
+DEFAULT_CONTENT_TYPE = 'application/json; charset=utf-8'
+
 
 class Request(object):
     def init(self, environ):
         self._environ = environ
-        self.path = self._environ.get('PATH_INFO', '/').strip()
         self._body = None
+        self._headers = dict()
+
+    @property
+    def headers(self):
+        for k, v in self._environ.items():
+            if k.startswith('HTTP_'):
+                self._headers[k[5:].replace('_', '-')] = v
+            else:
+                self._headers[k] = v
+        return self._headers
+
+    @property
+    def path(self):
+        return self.headers.get('PATH_INFO', '/').strip()
 
     @property
     def method(self):
-        return self._environ.get('REQUEST_METHOD', 'GET').upper()
+        return self.headers.get('REQUEST_METHOD', 'GET').upper()
 
     @property
     def query_string(self):
-        return self._environ.get('QUERY_STRING', None)
+        return self.headers.get('QUERY_STRING', None)
 
     @property
     def params(self):
@@ -82,12 +97,12 @@ class Request(object):
 
     @property
     def content_length(self):
-        return self._environ.get('CONTENT_LENGTH', 0)
+        return self.headers.get('CONTENT_LENGTH', 0)
 
     @property
     def body(self):
         """ type: dict """
-        body_stream = self._environ.get('wsgi.input').read()
+        body_stream = self.headers.get('wsgi.input').read()
         if body_stream:
             try:
                 self._body = json.loads(body_stream.decode('utf-8'))
@@ -97,11 +112,21 @@ class Request(object):
             self._body = dict()
         return self._body
 
+    @property
+    def token(self):
+        """ return json web token """
+        prefix = 'Bearer'
+        auth_header = self.headers.get('AUTHORIZATION')
+        if auth_header is not None:
+            return auth_header.partition(prefix)[-1].strip()
+
+        return auth_header
+
 
 class Response(object):
     def init(self):
         self.status = '200 OK'
-        self.content_type = 'application/json; charset=utf-8'
+        self.content_type = DEFAULT_CONTENT_TYPE
         self.headers = list()
         self.headers.append(('content-type', self.content_type))
         self.body = None
