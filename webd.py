@@ -205,34 +205,34 @@ class Application(object):
     def _get_responder(self, request):
         method = request.method
         route = request.path
+        responder = None
+        matched_uri = None
+        uri_count = int()
 
         uri_templates = self.routes.keys()
-        uri_part = [
-            uri.lstrip('/').rstrip('/').split('/') for uri in uri_templates
-        ]
         route_part = route.lstrip('/').rstrip('/').split('/')
         params = dict()
         for uri in uri_templates:
-            uri_part = uri.lstrip('/').split('/')
+            uri_part = uri.lstrip('/').rsplit('/').split('/')
             if len(uri_part) != len(route_part):
                 continue
 
             if uri_part == route_part:
                 responder = self._generate_responder(uri, method)
-                break
 
-            for index, item in enumerate(uri_part):
-                if item == route_part[index]:
-                    continue
-                else:
+            else:
+                for index, item in enumerate(uri_part):
                     if item.startswith('{') and item.endswith('}'):
                         params[item.rstrip('}').lstrip('{')] = route_part[
                             index]
-                    else:
-                        break
                 responder = self._generate_responder(uri, method)
+            uri_count += 1
+            matched_uri = uri
 
-        return (responder, params, method, uri)
+        if uri_count != 1:
+            raise Exception('conflict added route')
+
+        return (responder, params, method, matched_uri)
 
     def _generate_responder(self, uri, method):
         responders = self.routes[uri]
