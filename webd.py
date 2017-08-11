@@ -78,11 +78,12 @@ class Request(object):
 
     @property
     def params(self):
-        """ type: dict """
+        """
+        convert query sting to dictionary
+        """
         params = dict()
-        if self.query_string:
-            for field in self.query_string.split('&'):
-                k, _, v = field.partition('=')
+        for field in self.query_string.split('&'):
+            k, _, v = field.partition('=')
 
             if k in params:
                 old_value = params[k]
@@ -101,7 +102,10 @@ class Request(object):
 
     @property
     def body(self):
-        """ type: dict """
+        """
+        get input body data
+        type: dict
+        """
         body_stream = self.headers.get('wsgi.input').read()
         if body_stream:
             try:
@@ -125,7 +129,7 @@ class Request(object):
 
 class Response(object):
     def init(self):
-        self.status = '200 OK'
+        self.status = HTTP_CODES[200]
         self.content_type = DEFAULT_CONTENT_TYPE
         self.headers = list()
         self.headers.append(('content-type', self.content_type))
@@ -142,8 +146,8 @@ class Response(object):
         return self.body
 
 
-class Application(object):
-    def __init__(self, request=Request, response=Response):
+class Api(object):
+    def __init__(self):
         self.routes = dict()
 
     def __call__(self, environ, start_response):
@@ -237,9 +241,9 @@ class Application(object):
     def _generate_responder(self, uri, method):
         responders = self.routes[uri]
         responder = None
-        for method_allowed, responder_allowed in responders:
-            if method_allowed == method:
-                responder = responder_allowed
+        for method_defined, responder_defined in responders:
+            if method_defined == method:
+                responder = responder_defined
         return responder
 
     def _get_body(self, response):
