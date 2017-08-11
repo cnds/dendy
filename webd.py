@@ -74,7 +74,7 @@ class Request(object):
 
     @property
     def query_string(self):
-        return self.headers.get('QUERY_STRING', None)
+        return self.headers.get('QUERY_STRING', '')
 
     @property
     def params(self):
@@ -143,6 +143,7 @@ class Response(object):
         return self.body
 
 
+
 class Application(object):
     def __init__(self, request=Request, response=Response):
         self.routes = dict()
@@ -153,8 +154,15 @@ class Application(object):
         headers = response.headers
 
         responder, params, method, uri_template = self._get_responder(request)
-        if method == 'HEAD':
-            response.body = ''
+        if responder is None:
+            if method == 'HEAD':
+                response.body = ''
+            elif method == 'OPTIONS':
+                response.body = ''
+                allowed_methods = ', '.join(HTTP_METHODS)
+                response.headers.append(('Allow', allowed_methods))
+            else:
+                response.status = '405 METHOD_NOT_ALLOWED'
         else:
             output = responder(**params)
             response.body = json.dumps(output)
