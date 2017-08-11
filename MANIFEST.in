@@ -1,4 +1,2 @@
 include webd.py
 include setup.py
-include README
-include LICENSE
