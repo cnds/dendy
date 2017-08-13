@@ -137,8 +137,8 @@ class Response(object):
 
     def set_headers(self, headers):
         if isinstance(headers, dict):
-            for key, value in headers.items():
-                self.headers.append((str(key).lower(), value))
+            for k, v in headers.items():
+                self.headers.append((str(k).lower(), v))
 
     def set_status(self, status_code, reason=None):
         self.status = HTTP_CODES.get(status_code, 'Unknown')
@@ -155,18 +155,17 @@ class Api(object):
         response.init()
         headers = response.headers
 
-        responder, params, method, uri_template = self._get_responder(request)
+        responder, kwargs, method, uri_template = self._get_responder(request)
         if responder is None:
             if method == 'HEAD':
                 response.body = ''
             elif method == 'OPTIONS':
-                response.body = ''
                 allowed_methods = ', '.join(HTTP_METHODS)
                 response.headers.append(('Allow', allowed_methods))
             else:
                 response.status = HTTP_CODES[405]
         else:
-            output = responder(**params)
+            output = responder(**kwargs)
             response.body = json.dumps(output)
 
         body, length = self._get_body(response)
@@ -215,7 +214,7 @@ class Api(object):
 
         uri_templates = self.routes.keys()
         route_part = route.lstrip('/').rstrip('/').split('/')
-        params = dict()
+        kwargs = dict()
         for uri in uri_templates:
             uri_part = uri.lstrip('/').rsplit('/').split('/')
             if len(uri_part) != len(route_part):
@@ -225,10 +224,9 @@ class Api(object):
                 responder = self._generate_responder(uri, method)
 
             else:
-                for index, item in enumerate(uri_part):
-                    if item.startswith('{') and item.endswith('}'):
-                        params[item.rstrip('}').lstrip('{')] = route_part[
-                            index]
+                for i, j in enumerate(uri_part):
+                    if j.startswith('{') and j.endswith('}'):
+                        kwargs[j.rstrip('}').lstrip('{')] = route_part[i]
                 responder = self._generate_responder(uri, method)
             uri_count += 1
             matched_uri = uri
@@ -236,7 +234,7 @@ class Api(object):
         if uri_count != 1:
             raise Exception('conflict added route')
 
-        return (responder, params, method, matched_uri)
+        return (responder, kwargs, method, matched_uri)
 
     def _generate_responder(self, uri, method):
         responders = self.routes[uri]
