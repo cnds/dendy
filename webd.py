@@ -139,6 +139,8 @@ class Response(object):
         if isinstance(headers, dict):
             for k, v in headers.items():
                 self.headers.append((str(k).lower(), v))
+        else:
+            raise TypeError('headers must be dict type')
 
     def set_status(self, status_code, reason=None):
         self.status = HTTP_CODES.get(status_code, 'Unknown')
@@ -203,20 +205,24 @@ class Api(object):
             else:
                 if callable(responder):
                     responders.append((method, responder))
-                    self.routes.update({route: responders})
+
+        if self.routes.get(route.rstrip('/')):
+            raise Exception('conflict route exists: %s' % route)
+
+        self.routes.update({route: responders})
 
     def _get_responder(self, request):
         method = request.method
         route = request.path
         responder = None
         matched_uri = None
-        uri_count = int()
+        kwargs = dict()
+
+        route_part = route.lstrip('/').rstrip('/').split('/')
 
         uri_templates = self.routes.keys()
-        route_part = route.lstrip('/').rstrip('/').split('/')
-        kwargs = dict()
         for uri in uri_templates:
-            uri_part = uri.lstrip('/').rsplit('/').split('/')
+            uri_part = uri.lstrip('/').rsplit('/')
             if len(uri_part) != len(route_part):
                 continue
 
@@ -227,12 +233,8 @@ class Api(object):
                 for i, j in enumerate(uri_part):
                     if j.startswith('{') and j.endswith('}'):
                         kwargs[j.rstrip('}').lstrip('{')] = route_part[i]
-                responder = self._generate_responder(uri, method)
-            uri_count += 1
+                        responder = self._generate_responder(uri, method)
             matched_uri = uri
-
-        if uri_count != 1:
-            raise Exception('conflict added route')
 
         return (responder, kwargs, method, matched_uri)
 
