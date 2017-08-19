@@ -1,6 +1,6 @@
-## webd
+# webd
 
-### Micro python web app framework for creating REST API.
+### Micro python web framework for creating REST API.
 
 ### Hello World
 
