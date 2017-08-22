@@ -111,7 +111,7 @@ class Request(object):
             try:
                 self._body = json.loads(body_stream.decode('utf-8'))
             except json.JSONDecodeError as ex:
-                raise Exception(ex)
+                raise HTTPError(500, ex)
         else:
             self._body = dict()
         return self._body
@@ -140,7 +140,7 @@ class Response(object):
             for k, v in headers.items():
                 self.headers.append((str(k).lower(), v))
         else:
-            raise TypeError('headers must be dict type')
+            raise HTTPError(500, TypeError('headers must be dict type'))
 
     def set_status(self, status_code, reason=None):
         self.status = HTTP_CODES.get(status_code, 'Unknown')
@@ -188,13 +188,13 @@ class Api(object):
         """
 
         if not isinstance(route, str):
-            raise TypeError('route is not type string')
+            raise HTTPError(500, TypeError('route is not type string'))
 
         if not route.startswith('/'):
-            raise ValueError('route must start with "/"')
+            raise HTTPError(500, ValueError('route must start with "/"'))
 
         if '//' in route:
-            raise ValueError('route can not contain "//"')
+            raise HTTPError(500, ValueError('route can not contain "//"'))
 
         responders = list()
         for method in HTTP_METHODS:
@@ -207,7 +207,7 @@ class Api(object):
                     responders.append((method, responder))
 
         if self.routes.get(route.rstrip('/')):
-            raise Exception('conflict route exists: %s' % route)
+            raise HTTPError(500, 'conflict route exists: %s' % route)
 
         self.routes.update({route: responders})
 
@@ -256,11 +256,14 @@ class Api(object):
         return list(), 0
 
 
-class HTTPStatus(Exception):
+class HTTPError(Exception):
     def __init__(self, status, body=None, headers=None):
         self.status = status
         self.body = body
         self.headers = headers
+
+    def __repr__(self):
+        return '<%s %r>' % (self.status, repr(self.body))
 
 
 request = Request()
