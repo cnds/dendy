@@ -1,5 +1,7 @@
 import json
 
+from functools import wraps
+
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']
 
 HTTP_CODES = {
@@ -264,6 +266,23 @@ class HTTPError(Exception):
 
     def __repr__(self):
         return '<%s %r>' % (self.status, repr(self.body))
+
+
+def before(action):
+    def _before(responder):
+        do_before_all = do_before(action, responder)
+        return do_before_all
+
+    return _before
+
+
+def do_before(action, responder):
+    @wraps(responder)
+    def _do_beofre(*args, **kwargs):
+        action(*args, **kwargs)
+        responder(*args, **kwargs)
+
+    return _do_beofre
 
 
 request = Request()
