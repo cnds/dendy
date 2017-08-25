@@ -270,19 +270,24 @@ class HTTPError(Exception):
 
 def before(action):
     def _before(responder):
-        do_before_all = do_before(action, responder)
-        return do_before_all
-
+        @wraps(responder)
+        def do_before(*args, **kwargs):
+            action(*args, **kwargs)
+            output = responder(*args, **kwargs)
+            return output
+        return do_before
     return _before
 
 
-def do_before(action, responder):
-    @wraps(responder)
-    def _do_beofre(*args, **kwargs):
-        action(*args, **kwargs)
-        responder(*args, **kwargs)
-
-    return _do_beofre
+def after(action):
+    def _after(responder):
+        @wraps(responder)
+        def do_after(*args, **kwargs):
+            output = responder(*args, **kwargs)
+            action(*args, **kwargs)
+            return output
+        return do_after
+    return _after
 
 
 request = Request()
