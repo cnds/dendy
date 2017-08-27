@@ -1,4 +1,4 @@
-# webd
+# Dendy
 
 ### Micro python web framework for creating REST API.
 
