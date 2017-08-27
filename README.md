@@ -5,14 +5,14 @@
 ### Hello World
 
 ``` python
-from webd import request, response, Api
+from dendy import request, response, API
 from gevent.pywsgi import WSGIServer
 
 
 class HelloWorld(object):
 
     def get(self, name):
-        return 'Hello %s!' % name
+        return 'Hello %s!' % nam``e
 
     def post(self, name):
         result = response.set_status(
@@ -21,7 +21,7 @@ class HelloWorld(object):
                                                              name))
         return result
 
-app = Api()
+app = API()
 app.add_route('/{name}', HelloWorld())
 
 

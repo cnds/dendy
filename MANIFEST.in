@@ -1,2 +1,2 @@
-include webd.py
+include dendy.py
 include setup.py
