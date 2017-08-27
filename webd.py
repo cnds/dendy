@@ -170,15 +170,11 @@ class API(object):
                 if process_after is not None:
                     after_stack.append(process_after)
 
-            responder, kwargs, method, uri_template = self._get_responder(request)
+            responder, kwargs, method, uri_template = self._get_responder(
+                request)
         except Exception as ex:
             HTTPError(500, ex)
         else:
-            for component in self._middleware:
-                _, process_on, _ = component
-                if process_on is not None:
-                    process_on(request, response)
-
             if responder is None:
                 if method == 'HEAD':
                     response.body = ''
@@ -188,6 +184,11 @@ class API(object):
                 else:
                     response.status = HTTP_CODES[405]
             else:
+                for component in self._middleware:
+                    _, process_on, _ = component
+                    if process_on is not None:
+                        process_on(request, response)
+
                 output = responder(**kwargs)
                 response.body = json.dumps(output)
 
