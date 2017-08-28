@@ -1,2 +1,3 @@
-include dendy.py
-include setup.py
+include *.py
+include *.md
+recursive-include dendy *.py
