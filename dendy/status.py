@@ -44,6 +44,7 @@ HTTP_CODES = {
 
 
 class HTTPError(Exception):
+
     def __init__(self, status, body=None, headers=None):
         self.status = status
         self.body = body

@@ -3,6 +3,7 @@ from api import DEFAULT_CONTENT_TYPE
 
 
 class Response(object):
+
     def init(self):
         self.status = HTTP_CODES[200]
         self.content_type = DEFAULT_CONTENT_TYPE

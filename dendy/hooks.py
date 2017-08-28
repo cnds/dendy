@@ -8,7 +8,9 @@ def before(action):
             action(*args, **kwargs)
             output = responder(*args, **kwargs)
             return output
+
         return do_before
+
     return _before
 
 
@@ -19,5 +21,7 @@ def after(action):
             output = responder(*args, **kwargs)
             action(*args, **kwargs)
             return output
+
         return do_after
+
     return _after

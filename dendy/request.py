@@ -1,7 +1,10 @@
 import json
 
+from status import HTTPError
+
 
 class Request(object):
+
     def init(self, environ):
         self._environ = environ
         self._body = None
@@ -62,7 +65,7 @@ class Request(object):
         if body_stream:
             try:
                 self._body = json.loads(body_stream.decode('utf-8'))
-            except json.JSONDecodeError as ex:
+            except json.JSONDecoder as ex:
                 raise HTTPError(500, ex)
         else:
             self._body = dict()

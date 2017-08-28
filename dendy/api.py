@@ -1,6 +1,6 @@
 import json
 
-from requset import request
+from request import request
 from response import response
 from status import HTTPError, HTTP_CODES
 
@@ -10,6 +10,7 @@ DEFAULT_CONTENT_TYPE = 'application/json; charset=utf-8'
 
 
 class API(object):
+
     def __init__(self, middleware=None):
         self.routes = dict()
         self._middleware = self.prepare_middleware(middleware)
@@ -29,20 +30,11 @@ class API(object):
                 if process_after is not None:
                     after_stack.append(process_after)
 
-            responder, kwargs, method, uri_template = self._get_responder(
-                request)
+            responder, kwargs, method = self._get_responder(request)
         except Exception as ex:
-            HTTPError(500, ex)
+            raise HTTPError(500, ex)
         else:
-            if responder is None:
-                if method == 'HEAD':
-                    response.body = ''
-                elif method == 'OPTIONS':
-                    allowed_methods = ', '.join(HTTP_METHODS)
-                    response.headers.append(('Allow', allowed_methods))
-                else:
-                    response.status = HTTP_CODES[405]
-            else:
+            if responder is not None:
                 for component in self._middleware:
                     _, process_on, _ = component
                     if process_on is not None:
@@ -50,6 +42,14 @@ class API(object):
 
                 output = responder(**kwargs)
                 response.body = json.dumps(output)
+            else:
+                if method == 'HEAD':
+                    response.body = ''
+                elif method == 'OPTIONS':
+                    allowed_methods = ', '.join(HTTP_METHODS)
+                    response.headers.append(('Allow', allowed_methods))
+                else:
+                    response.status = HTTP_CODES[405]
 
         finally:
             for process_after in after_stack:
@@ -100,7 +100,6 @@ class API(object):
         method = request.method
         route = request.path
         responder = None
-        matched_uri = None
         kwargs = dict()
 
         route_part = route.lstrip('/').rstrip('/').split('/')
@@ -119,9 +118,8 @@ class API(object):
                     if j.startswith('{') and j.endswith('}'):
                         kwargs[j.rstrip('}').lstrip('{')] = route_part[i]
                         responder = self._generate_responder(uri, method)
-            matched_uri = uri
 
-        return (responder, kwargs, method, matched_uri)
+        return (responder, kwargs, method)
 
     def _generate_responder(self, uri, method):
         responders = self.routes[uri]
