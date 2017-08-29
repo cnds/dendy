@@ -22,6 +22,3 @@ class Response(object):
         self.status = HTTP_CODES.get(status_code, 'Unknown')
         self.body = reason
         return self.body
-
-
-response = Response()

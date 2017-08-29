@@ -80,6 +80,3 @@ class Request(object):
             return auth_header.partition(prefix)[-1].strip()
 
         return auth_header
-
-
-request = Request()
