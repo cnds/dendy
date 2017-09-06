@@ -1,6 +1,6 @@
 import json
 
-from status import HTTPError
+from .status import HTTPError
 
 
 class Request(object):

@@ -1,8 +1,8 @@
 import json
 
-from request import request
-from response import response
-from status import HTTPError, HTTP_CODES
+from . import request
+from . import response
+from .status import HTTPError, HTTP_CODES
 
 
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']
