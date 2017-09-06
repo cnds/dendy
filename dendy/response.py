@@ -1,5 +1,5 @@
-from status import HTTPError, HTTP_CODES
-from api import DEFAULT_CONTENT_TYPE
+from .status import HTTPError, HTTP_CODES
+from .api import DEFAULT_CONTENT_TYPE
 
 
 class Response(object):
