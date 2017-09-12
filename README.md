@@ -1,8 +1,8 @@
 # Dendy
 
-### Micro python web framework for creating REST API.
+Micro python web framework for creating REST API.
 
-### Hello World
+## Hello World
 
 ``` python
 from dendy import request, response, API
@@ -27,4 +27,16 @@ app.add_route('/{name}', HelloWorld())
 
 if __name__ == '__main__':
     WSGIServer(('', 8000), app).serve_forever()
+```
+
+## Features
+
+* easy to create REST API
+* support middleware and hooks
+* CPython3.6+ support
+
+## Installation
+
+``` shell
+$ pip install dendy
 ```
