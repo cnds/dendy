@@ -1,8 +1,8 @@
 import json
 
-from . import request
-from . import response
-from .status import HTTPError, HTTP_CODES
+from dendy.request import request
+from dendy.response import response
+from dendy.status import HTTPError, HTTP_CODES
 
 
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']
@@ -10,6 +10,32 @@ DEFAULT_CONTENT_TYPE = 'application/json; charset=utf-8'
 
 
 class API(object):
+    """The main entry point into a Dendy app.
+
+    Each API instance provides a callable WSGI interface and a routing engine.
+
+    Keyword Arguments:
+        middleware(list or object):
+
+            class ExampleMiddleware(object):
+
+                def process_before(self, req, resp):
+                    '''
+                    Process the request before routing it. 
+                    '''
+
+                def process_on(self, req, resp, params):
+                    '''
+                    Process the request and response after routing.
+                    '''
+
+                def process_after(self, req, resp, params):
+                    '''
+                    Post-process of the response.
+                    '''
+
+
+    """
 
     def __init__(self, middleware=None):
         self.routes = dict()
@@ -30,7 +56,7 @@ class API(object):
                 if process_after is not None:
                     after_stack.append(process_after)
 
-            responder, kwargs, method = self._get_responder(request)
+            responder, params, method = self._get_responder(request)
         except Exception as ex:
             raise HTTPError(500, ex)
         else:
@@ -38,9 +64,9 @@ class API(object):
                 for component in self._middleware:
                     _, process_on, _ = component
                     if process_on is not None:
-                        process_on(request, response)
+                        process_on(request, response, params)
 
-                output = responder(**kwargs)
+                output = responder(**params)
                 response.body = json.dumps(output)
             else:
                 if method == 'HEAD':
@@ -53,7 +79,7 @@ class API(object):
 
         finally:
             for process_after in after_stack:
-                process_after(request, response)
+                process_after(request, response, params)
 
         body, length = self._get_body(response)
         if length is not None:
@@ -96,11 +122,11 @@ class API(object):
 
         self.routes.update({route: responders})
 
-    def _get_responder(self, request):
-        method = request.method
-        route = request.path
+    def _get_responder(self, req):
+        method = req.method
+        route = req.path
         responder = None
-        kwargs = dict()
+        params = dict()
 
         route_part = route.lstrip('/').rstrip('/').split('/')
 
@@ -116,10 +142,10 @@ class API(object):
             else:
                 for i, j in enumerate(uri_part):
                     if j.startswith('{') and j.endswith('}'):
-                        kwargs[j.rstrip('}').lstrip('{')] = route_part[i]
+                        params[j.rstrip('}').lstrip('{')] = route_part[i]
                         responder = self._generate_responder(uri, method)
 
-        return (responder, kwargs, method)
+        return (responder, params, method)
 
     def _generate_responder(self, uri, method):
         responders = self.routes[uri]
@@ -129,8 +155,8 @@ class API(object):
                 responder = responder_defined
         return responder
 
-    def _get_body(self, response):
-        body = response.body
+    def _get_body(self, resp):
+        body = resp.body
         if body is not None:
             if not isinstance(body, bytes):
                 body = body.encode('utf-8')

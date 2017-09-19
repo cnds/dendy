@@ -1,7 +1,7 @@
-from api import API
-from request import Request
-from response import Response
-from hooks import before, after
+from dendy.api import API
+from dendy.request import Request
+from dendy.response import Response
+from dendy.hooks import before, after
 
 
 request = Request()
