@@ -1,9 +1,13 @@
 import json
 
-from .status import HTTPError
+from dendy.status import HTTPError
 
 
 class Request(object):
+    """ Represents a client's HTTP request.
+    Args:
+        env(dict): A WSGI environment dict passed from the API handler.
+    """
 
     def init(self, environ):
         self._environ = environ

@@ -1,8 +1,15 @@
-from .status import HTTPError, HTTP_CODES
-from .api import DEFAULT_CONTENT_TYPE
+from dendy.status import HTTPError, HTTP_CODES
+from dendy.api import DEFAULT_CONTENT_TYPE
 
 
 class Response(object):
+    """ Represents an HTTP response to a client request.
+
+    Attributes:
+        status(str): HTTP status line(e.g., '200 OK').
+        body(bytes): Byte string representing response content.
+        headers(list): HTTP headers.
+    """
 
     def init(self):
         self.status = HTTP_CODES[200]
