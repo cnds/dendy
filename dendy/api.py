@@ -1,12 +1,11 @@
 import json
 
-from dendy.request import request
-from dendy.response import response
+from dendy.request import req
+from dendy.response import resp
 from dendy.status import HTTPError, HTTP_CODES
 
 
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']
-DEFAULT_CONTENT_TYPE = 'application/json; charset=utf-8'
 
 
 class API(object):
@@ -42,21 +41,22 @@ class API(object):
         self._middleware = self.prepare_middleware(middleware)
 
     def __call__(self, environ, start_response):
-        request.init(environ)
-        response.init()
-        headers = response.headers
+        req.init(environ)
+        resp.init()
+        headers = resp.headers
         after_stack = list()
+        params = dict()
 
         try:
             for component in self._middleware:
                 process_before, _, process_after = component
                 if process_before is not None:
-                    process_before(request, response)
+                    process_before(req, resp)
 
                 if process_after is not None:
                     after_stack.append(process_after)
 
-            responder, params, method = self._get_responder(request)
+            responder, params, method = self._get_responder(req)
         except Exception as ex:
             raise HTTPError(500, ex)
         else:
@@ -64,28 +64,28 @@ class API(object):
                 for component in self._middleware:
                     _, process_on, _ = component
                     if process_on is not None:
-                        process_on(request, response, params)
+                        process_on(req, resp, params)
 
                 output = responder(**params)
-                response.body = json.dumps(output)
+                resp.body = json.dumps(output)
             else:
                 if method == 'HEAD':
-                    response.body = ''
+                    resp.body = ''
                 elif method == 'OPTIONS':
                     allowed_methods = ', '.join(HTTP_METHODS)
-                    response.headers.append(('Allow', allowed_methods))
+                    resp.headers.append(('Allow', allowed_methods))
                 else:
-                    response.status = HTTP_CODES[405]
+                    resp.status = HTTP_CODES[405]
 
         finally:
             for process_after in after_stack:
-                process_after(request, response, params)
+                process_after(req, resp, params)
 
-        body, length = self._get_body(response)
+        body, length = self._get_body(resp)
         if length is not None:
-            response.headers.append(('content-length', str(length)))
+            resp.headers.append(('content-length', str(length)))
 
-        start_response(response.status, headers)
+        start_response(resp.status, headers)
         return body
 
     def add_route(self, route, resource):

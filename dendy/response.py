@@ -1,5 +1,7 @@
 from dendy.status import HTTPError, HTTP_CODES
-from dendy.api import DEFAULT_CONTENT_TYPE
+
+
+DEFAULT_CONTENT_TYPE = 'application/json; charset=utf-8'
 
 
 class Response(object):
@@ -29,3 +31,6 @@ class Response(object):
         self.status = HTTP_CODES.get(status_code, 'Unknown')
         self.body = reason
         return self.body
+
+
+resp = Response()
