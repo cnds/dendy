@@ -14,7 +14,7 @@ def create_md5_key(content):
 def create_hash_key(content, salt, iterations=10000):
     hashed_content = pbkdf2_hmac(
         'sha256', content.encode('utf-8'), salt.encode('utf-8'), iterations)
-    hashed_content_hex = binascii.hexlify(hashed_content)
+    hashed_content_hex = binascii.hexlify(hashed_content).decode('utf-8')
     return hashed_content_hex
 
 
