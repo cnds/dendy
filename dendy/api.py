@@ -56,7 +56,7 @@ class API(object):
                 if process_after is not None:
                     after_stack.append(process_after)
 
-            responder, params, method = self._get_responder(req)
+            responder, params, method = self._get_responder()
         except Exception as ex:
             raise HTTPError(500, ex)
         else:
@@ -81,7 +81,7 @@ class API(object):
             for process_after in after_stack:
                 process_after(req, resp, params)
 
-        body, length = self._get_body(resp)
+        body, length = self._get_body()
         if length is not None:
             resp.headers.append(('content-length', str(length)))
 
@@ -122,7 +122,7 @@ class API(object):
 
         self.routes.update({route: responders})
 
-    def _get_responder(self, req):
+    def _get_responder(self):
         method = req.method
         route = req.path
         responder = None
@@ -145,7 +145,7 @@ class API(object):
                         params[j.rstrip('}').lstrip('{')] = route_part[i]
                         responder = self._generate_responder(uri, method)
 
-        return (responder, params, method)
+        return responder, params, method
 
     def _generate_responder(self, uri, method):
         responders = self.routes[uri]
@@ -155,7 +155,8 @@ class API(object):
                 responder = responder_defined
         return responder
 
-    def _get_body(self, resp):
+    @staticmethod
+    def _get_body():
         body = resp.body
         if body is not None:
             if not isinstance(body, bytes):
@@ -164,7 +165,8 @@ class API(object):
 
         return list(), 0
 
-    def prepare_middleware(self, middleware=None):
+    @staticmethod
+    def prepare_middleware(middleware=None):
         prepared_middleware = list()
 
         if middleware is None:
